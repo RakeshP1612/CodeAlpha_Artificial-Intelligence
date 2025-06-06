@@ -1,0 +1,56 @@
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+import re
+
+
+faq_questions = [
+    "What is your refund policy?",
+    "How do I reset my password?",
+    "Where can I find the user manual?",
+    "What payment methods are accepted?",
+    "How long does shipping take?"
+]
+
+faq_answers = [
+    "You can request a refund within 30 days of purchase.",
+    "To reset your password, click on 'Forgot Password' at login.",
+    "The user manual is available under the 'Help' section of our website.",
+    "We accept credit cards, debit cards, and PayPal.",
+    "Shipping usually takes 5-7 business days."
+]
+
+
+def preprocess(text):
+    text = text.lower()
+    text = re.sub(r'[^\w\s]', '', text) 
+    return text
+
+
+preprocessed_faqs = [preprocess(q) for q in faq_questions]
+
+vectorizer = TfidfVectorizer()
+tfidf_matrix = vectorizer.fit_transform(preprocessed_faqs)
+
+def get_best_answer(user_question):
+    user_question = preprocess(user_question)
+    user_vec = vectorizer.transform([user_question])
+    similarities = cosine_similarity(user_vec, tfidf_matrix)
+    best_idx = np.argmax(similarities)
+    best_score = similarities[0, best_idx]
+    
+    if best_score < 0.2:
+        return "Sorry, I don't understand your question."
+    else:
+        return faq_answers[best_idx]
+
+
+print("Welcome to the FAQ Chatbot! Ask your questions or type 'exit' to quit.")
+
+while True:
+    user_input = input("You: ")
+    if user_input.lower() == 'exit':
+        print("Chatbot: Goodbye!")
+        break
+    answer = get_best_answer(user_input)
+    print("Chatbot:", answer)
